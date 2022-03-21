@@ -12,3 +12,6 @@ printChar = function (문자){
 };
 
 printChar('청소 꼼꼼히');
+
+
+
