@@ -13,7 +13,7 @@ function templateList(fileList) {
 }
 
 
-function templateHTML(title, list, body){
+function templateHTML(title, list, body, control){
     return `<!doctype html>
                 <html lang="ko">
                     <head>
@@ -24,7 +24,7 @@ function templateHTML(title, list, body){
                         <h1><a href="/">WEB</a></h1>
                         ${list}
                         <h2>${title}</h2>
-                        <a href="/create">create</a>
+                        ${control}
                         <p>${body}</p>
                     </body>
                 </html>
@@ -43,18 +43,23 @@ const app = http.createServer(function (request, response) {
 
             fs.readdir('data/', function (err,data){
                 const list = templateList(data);
-                const template = templateHTML(title, list, description);
+                // 메인화면에서는 create(새 게시글 작성)만 가능하게
+                const template = templateHTML(title, list, description,
+                    '<a href="create">create</a>');
                 response.writeHead(200)
                 response.end(template)
             });
 
 
-        } else {
+        }
+        else {
             fs.readdir('data/', function (err, data){
                 fs.readFile(`data/${queryData.id}`, 'utf8', function (err, description) {
                     const title = queryData.id
                     const list = templateList(data)
-                    const template = templateHTML(title, list, description);
+                    // 특정 게시글을 읽고 있을땐 create(게시글 생성)와 update(수정)를 보이게
+                    const template = templateHTML(title, list, description,
+                        `<a href="create">create</a> <a href="/update?id=${title}">update</a>`);
                     response.writeHead(200)
                     response.end(template)
                 })
@@ -69,7 +74,7 @@ const app = http.createServer(function (request, response) {
                     <p><input type="text" name="title" placeholder="title"> </p>
                     <p><textarea name="description" placeholder="description"></textarea></p>                
                     <p><input type="submit"></p>
-                </form>`)
+                </form>`, '')  // 글생성 중에는 create, update가 안나오게
             response.writeHead(200);
             response.end(template)
         });
@@ -84,9 +89,13 @@ const app = http.createServer(function (request, response) {
             const post = qs.parse(body);
             const title = post.title;
             const description = post.description;
-        });
-        response.writeHead(200);
-        response.end('success');
+            fs.writeFile(`data/${title}`, description, 'utf-8', function (err){
+                response.writeHead(302, {Location: `/?id=${title}`});
+                response.end();
+            });
+        })
+        // response.writeHead(200);
+        // response.end('success');
     }
     else {
         response.writeHead(404)
