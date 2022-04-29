@@ -1,7 +1,9 @@
-const http = require('http')
-const fs = require('fs')
-const url = require('url')
+const http = require('http');
+const fs = require('fs');
+const url = require('url');
 const qs = require('querystring');
+const sanitizeHtml = require('sanitize-html');
+
 
 const template = {
     HTML: function (title, list, body, control){
@@ -59,11 +61,16 @@ const app = http.createServer(function (request, response) {
                 fs.readFile(`data/${queryData.id}`, 'utf8', function (err, description) {
                     const title = queryData.id
                     const list = template.List(data)
+
+                    // XSS방지(게시글 제목과 내용에 스크립트를 못 넣도록 함)
+                    const sanitizedTitle = sanitizeHtml(title);
+                    const sanitizedDescription = sanitizeHtml(description)
+
                     // 특정 게시글을 읽고 있을땐 create(게시글 생성)와 update(수정)를 보이게
-                    const html = template.HTML(title, list, description,
-                        `<a href="create">create</a> <a href="/update?id=${title}">update</a>
+                    const html = template.HTML(title, list, sanitizedDescription,
+                        `<a href="create">create</a> <a href="/update?id=${sanitizedTitle}">update</a>
                                 <form action="delete_process" method="post">
-                                    <input type="hidden" name="id" value="${title}">
+                                    <input type="hidden" name="id" value="${sanitizedTitle}">
                                     <input type="submit" value="delete">
                                 </form>`);
                     response.writeHead(200)
